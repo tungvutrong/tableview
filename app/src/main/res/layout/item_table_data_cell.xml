@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<TextView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/ctv_data"
+    android:layout_width="350dp"
+    android:layout_height="100dp"
+    android:background="@drawable/bg_default"
+    android:focusable="true"
+    android:gravity="center"
+    android:textAlignment="center"
+    android:textColor="#000000"
+    android:textSize="20sp"
+    tools:ignore="ContentDescription" />

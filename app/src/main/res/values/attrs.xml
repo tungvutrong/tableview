@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <declare-styleable name="CustomTableGridView">
+        <attr name="ctgv_hasFixSize" format="boolean" />
+        <attr name="ctgv_smoothScroll" format="boolean" />
+        <attr name="ctgv_itemViewCacheSize" format="integer" />
+        <attr name="ctgv_fakeLastItem" format="integer" />
+        <attr name="ctgv_fakeFirstItem" format="integer" />
+        <attr name="ctgv_autoSlide">
+            <enum name="left" value="1" />
+            <enum name="right" value="2" />
+            <enum name="none" value="0" />
+        </attr>
+    </declare-styleable>
+</resources>
