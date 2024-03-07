@@ -110,13 +110,13 @@ object ConfigDataTest {
         }
     }
 
-    fun epgChildCreator(parent: ViewGroup, type: Int): ItemChildHolder {
+    fun epgChildCreator(parent: ViewGroup, type: Int, onChildFocus: ()->Unit): ItemChildHolder {
         val inflater = LayoutInflater.from(parent.context)
         val child = inflater.inflate(R.layout.item_table_data_cell, parent, false)
-        return ItemChildHolder(child) { a, b ->
+        return ItemChildHolder(child, { a, _ ->
             val nameView = child.findViewById<TextView>(R.id.ctv_data)
             val text = (a as EpgModel).name
             nameView.text = text
-        }
+        },onChildFocus)
     }
 }

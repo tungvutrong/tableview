@@ -10,9 +10,9 @@ import com.example.tablegridview.R
 import java.util.concurrent.Executors
 
 class ItemAdapter(
-    private val childViewHolder: (ViewGroup, Int) -> ItemChildHolder,
+    private val childViewHolder: (ViewGroup, Int, ()->Unit) -> ItemChildHolder,
     private val onChildScroll: (View, Int, Int, Int) -> Unit,
-    private val onViewComplete:(Int,Int)->Unit
+    private val onViewComplete: (Int, Int) -> Unit
 ) : ListAdapter<ItemData, ItemHolder>(
     AsyncDifferConfig.Builder(ItemCallback())
         .setBackgroundThreadExecutor(Executors.newSingleThreadExecutor())

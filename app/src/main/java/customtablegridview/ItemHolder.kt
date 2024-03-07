@@ -7,12 +7,13 @@ import com.example.tablegridview.R
 
 class ItemHolder(
     view: View,
-    childViewHolder: (ViewGroup, Int) -> ItemChildHolder,
+    childViewHolder: (ViewGroup, Int, ()->Unit) -> ItemChildHolder,
     onChildScroll: (View, Int, Int, Int) -> Unit
 ) : RecyclerView.ViewHolder(view) {
 
     private var rcv: RecyclerView = view.findViewById(R.id.rcv_item)
-    private var position = 0
+    private var positionCellIndex = 0
+    private var positionRowIndex = 0
 
     init {
         rcv.layoutManager = CustomLinearLayoutManager(
@@ -21,19 +22,21 @@ class ItemHolder(
             reverseLayout = false
         ).apply {
             horizontalItemFocus {
-                position = it
+                positionCellIndex = it
             }
         }
         rcv.addOnScrollListener(object : RecyclerView.OnScrollListener() {
             override fun onScrolled(recyclerView: RecyclerView, dx: Int, dy: Int) {
                 super.onScrolled(recyclerView, dx, dy)
-                if (rcv.findFocus() != null) {
-                    onChildScroll(rcv, dx, dy, position)
+                if (layoutPosition == positionRowIndex) {
+                    onChildScroll(rcv, dx, dy, positionCellIndex)
                 }
             }
         })
         rcv.addItemDecoration(LinearItemDecoration(10, RecyclerView.HORIZONTAL, false))
-        rcv.adapter = ItemChildAdapter(childViewHolder)
+        rcv.adapter = ItemChildAdapter(childViewHolder){
+            positionRowIndex = layoutPosition
+        }
     }
 
     fun availableIndex(pos: Int) {

@@ -7,7 +7,8 @@ import androidx.recyclerview.widget.ListAdapter
 import java.util.concurrent.Executors
 
 class ItemChildAdapter(
-    private val viewHolder: (ViewGroup, Int) -> ItemChildHolder
+    private val viewHolder: (ViewGroup, Int, () -> Unit) -> ItemChildHolder,
+    private val onChildFocus: () -> Unit
 ) : ListAdapter<ItemChildData, ItemChildHolder>(
     AsyncDifferConfig.Builder(ItemChildCallback())
         .setBackgroundThreadExecutor(Executors.newSingleThreadExecutor())
@@ -29,7 +30,7 @@ class ItemChildAdapter(
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ItemChildHolder {
-        return viewHolder(parent, viewType)
+        return viewHolder(parent, viewType, onChildFocus)
     }
 
     override fun onBindViewHolder(holder: ItemChildHolder, position: Int) {

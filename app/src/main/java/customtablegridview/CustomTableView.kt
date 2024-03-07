@@ -4,7 +4,6 @@ import android.content.Context
 import android.os.Handler
 import android.os.Looper
 import android.util.AttributeSet
-import android.util.Log
 import android.view.LayoutInflater
 import android.view.ViewGroup
 import android.widget.FrameLayout
@@ -15,7 +14,6 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.example.tablegridview.R
 import java.lang.Exception
-
 
 class CustomTableView @JvmOverloads constructor(
     context: Context,
@@ -55,7 +53,7 @@ class CustomTableView @JvmOverloads constructor(
         rowViewHolder: ((ViewGroup, Int) -> RowViewHolder)? = null,
         columnData: Triple<Boolean?, Float?, Int?>? = null,
         columnViewHolder: ((ViewGroup, Int) -> ColumnHeaderHolder)? = null,
-        itemViewHolder: (ViewGroup, Int) -> ItemChildHolder
+        itemViewHolder: (ViewGroup, Int, ()->Unit) -> ItemChildHolder
     ) {
         if (initUiComponent) {
             throw Exception("UI available")
@@ -144,10 +142,9 @@ class CustomTableView @JvmOverloads constructor(
                         it.scrollBy(dx, 0)
                     }
                 }
-            }, { w, h ->
+            }, { _, h ->
                 currentItemHeight = h
                 viewLayoutManager.verticalOffset = h
-                Log.i("aaaaaaaaaaaa", "config: $w, $h")
             })
         }
 
@@ -180,8 +177,6 @@ class CustomTableView @JvmOverloads constructor(
                 itemAnimator = null
             }
         }
-
-
 
         if (rowHeaderAvailable()) {
             val rowSet = ConstraintSet()
