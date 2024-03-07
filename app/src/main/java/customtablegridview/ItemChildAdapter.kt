@@ -1,6 +1,5 @@
 package customtablegridview
 
-import android.util.Log
 import android.view.ViewGroup
 import androidx.recyclerview.widget.AsyncDifferConfig
 import androidx.recyclerview.widget.DiffUtil
@@ -8,8 +7,7 @@ import androidx.recyclerview.widget.ListAdapter
 import java.util.concurrent.Executors
 
 class ItemChildAdapter(
-    private val viewHolder: (ViewGroup, Int) -> ItemChildHolder,
-    private val onChildReady:(Int) -> Unit
+    private val viewHolder: (ViewGroup, Int) -> ItemChildHolder
 ) : ListAdapter<ItemChildData, ItemChildHolder>(
     AsyncDifferConfig.Builder(ItemChildCallback())
         .setBackgroundThreadExecutor(Executors.newSingleThreadExecutor())
@@ -31,12 +29,7 @@ class ItemChildAdapter(
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ItemChildHolder {
-        val vh = viewHolder(parent, viewType)
-        vh.itemView.post {
-            val w = vh.itemView.width
-            onChildReady(w)
-        }
-        return vh
+        return viewHolder(parent, viewType)
     }
 
     override fun onBindViewHolder(holder: ItemChildHolder, position: Int) {

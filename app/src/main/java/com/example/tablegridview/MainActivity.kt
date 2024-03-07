@@ -2,9 +2,7 @@ package com.example.tablegridview
 
 import android.content.pm.ActivityInfo
 import android.os.Bundle
-import android.util.Log
 import androidx.fragment.app.FragmentActivity
-import customtablegridview.CustomTableGridView
 import customtablegridview.CustomTableView
 
 class MainActivity : FragmentActivity() {
@@ -16,13 +14,13 @@ class MainActivity : FragmentActivity() {
         view.config(
             rowData = Triple(first = false, second = 0.3f, third = null),
             rowViewHolder = ConfigDataTest::epgRowHeaderCreator,
-            columnData = Triple(first = false, second = 0.1f, third = null),
+            columnData = null,
             columnViewHolder = ConfigDataTest::epgColumnHeaderCreator,
             itemViewHolder = ConfigDataTest::epgChildCreator
         )
         val rowData = ConfigDataTest.dataTest.map {
             ConfigDataTest.EpgRowHeaderModel(
-                id = it.id,
+                id = "${it.id}",
                 url = it.url
             )
         }

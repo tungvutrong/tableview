@@ -1,15 +1,16 @@
 package customtablegridview
 
 import android.content.Context
+import android.os.Handler
+import android.os.Looper
 import android.util.AttributeSet
 import android.util.Log
 import android.view.LayoutInflater
-import android.view.View
 import android.view.ViewGroup
 import android.widget.FrameLayout
-import android.widget.HorizontalScrollView
 import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.constraintlayout.widget.ConstraintSet
+import androidx.core.view.forEach
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.example.tablegridview.R
@@ -30,13 +31,11 @@ class CustomTableView @JvmOverloads constructor(
     private var columnHeaderSizeFix: Int = 0
     private var columnHeaderScrollAble: Boolean = true
 
-    private var childItem = 0
 
     private lateinit var mainLayout: ConstraintLayout
     private lateinit var rowHeaderView: RecyclerView
     private lateinit var columnHeaderView: RecyclerView
     private lateinit var dataView: RecyclerView
-    private lateinit var hsvView: CustomHorizontalScrollView
 
     private var initUiComponent = false
 
@@ -47,6 +46,9 @@ class CustomTableView @JvmOverloads constructor(
     private fun columnHeaderAvailable(): Boolean {
         return (columnHeaderSizePrefer > 0f && columnHeaderSizePrefer < 1f) || columnHeaderSizeFix > 0
     }
+
+    private var currentIndex = 0
+    private var currentItemHeight = 0
 
     fun config(
         rowData: Triple<Boolean?, Float?, Int?>? = null,
@@ -60,7 +62,7 @@ class CustomTableView @JvmOverloads constructor(
         }
 
         val inflater = LayoutInflater.from(context)
-        val mainView = inflater.inflate(R.layout.item_base_view, this, false)
+        val mainView = inflater.inflate(R.layout.item_table_base_view, this, false)
         addView(
             mainView, ViewGroup.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT,
@@ -68,40 +70,84 @@ class CustomTableView @JvmOverloads constructor(
             )
         )
         mainLayout = mainView.findViewById(R.id.ctl_main)
-        hsvView = mainView.findViewById<CustomHorizontalScrollView?>(R.id.hsv_item).apply {
-            listener = object : CustomHorizontalScrollView.Listener {
-                override fun onScrollChanged(l: Int, t: Int, oldl: Int, oldt: Int) {
-                    val dx = l - oldl
-                    Log.i("aaaaaaaaaaaaaa", "onScrollChanged: $dx")
-
-                    if (dx != 0) {
-                        columnHeaderView.scrollBy(dx,0)
-                    }
-                }
-            }
-        }
         dataView = mainView.findViewById<RecyclerView>(R.id.rcv_item).apply {
-            layoutManager = LinearLayoutManager(
-                context, RecyclerView.VERTICAL, false
+            itemAnimator = null
+            var waitingScrollUpAction = false
+            var waitingScrollDownAction = false
+            var waitingNextItem = -1
+            var onAction = false
+
+            val viewLayoutManager = CustomLinearLayoutManager(
+                context = context,
+                orientation = RecyclerView.VERTICAL,
+                reverseLayout = false,
+                lastPrevent = 0,
+                smoothScrollTime = 50f
             )
+            this.layoutManager = viewLayoutManager
+            viewLayoutManager.verticalItemFocus({
+                if(waitingScrollUpAction || onAction ||waitingScrollDownAction) return@verticalItemFocus
+                waitingNextItem = it
+                waitingScrollUpAction = true
+            }, {
+//                if(waitingScrollDownAction || onAction ||waitingScrollUpAction) return@verticalItemFocus
+//                waitingScrollDownAction = true
+//                waitingNextItem = it
+//                rowHeaderView.smoothScrollBy(0, currentItemHeight)
+            })
+
             isFocusable = false
             addItemDecoration(LinearItemDecoration(10, RecyclerView.VERTICAL, false))
             addOnScrollListener(object : RecyclerView.OnScrollListener() {
                 override fun onScrolled(recyclerView: RecyclerView, dx: Int, dy: Int) {
                     super.onScrolled(recyclerView, dx, dy)
-                    Log.i("aaaaaaaaaaaaaa", "onScrolled 1: $dy")
                     if (dy != 0) {
-                        rowHeaderView.scrollBy(0, dy)
+                        if (rowHeaderAvailable()) {
+                            rowHeaderView.scrollBy(0, dy)
+                        }
+                    }
+                }
+
+                override fun onScrollStateChanged(recyclerView: RecyclerView, newState: Int) {
+                    super.onScrollStateChanged(recyclerView, newState)
+                    if (newState == RecyclerView.SCROLL_STATE_IDLE) {
+                        if (waitingScrollUpAction && waitingNextItem >= 0 && !onAction) {
+                            onAction = true
+                            val view = (dataView.layoutManager as? LinearLayoutManager)
+                                ?.findViewByPosition(waitingNextItem)
+                            val child = (view as? ViewGroup)?.getChildAt(currentIndex)
+                            child?.requestFocus()
+                            waitingScrollUpAction = false
+                            onAction = false
+                        }
+                        if (waitingScrollDownAction && waitingNextItem >= 0 && !onAction) {
+                            onAction = true
+                            Handler(Looper.getMainLooper()).postDelayed({
+                                val view = (dataView.layoutManager as? LinearLayoutManager)
+                                    ?.findViewByPosition(waitingNextItem)
+                                val child = (view as? ViewGroup)?.getChildAt(currentIndex)
+                                child?.requestFocus()
+                                waitingScrollDownAction = false
+                                onAction = false
+                            },100)
+                        }
                     }
                 }
             })
-            adapter = ItemAdapter(itemViewHolder, { direction ->
-                if (childItem != 0 && direction == View.FOCUS_LEFT || direction == FOCUS_RIGHT) {
-                    val prefix = if (direction == View.FOCUS_LEFT) -1 else 1
-                    hsvView.scrollBy(prefix * childItem, 0)
+            adapter = ItemAdapter(itemViewHolder, { v, dx, _, pos ->
+                currentIndex = pos
+                if (columnHeaderAvailable()) {
+                    columnHeaderView.scrollBy(dx, 0)
                 }
-            }, {
-                if (childItem == 0) childItem = it
+                dataView.forEach {
+                    if (it is RecyclerView && it != v) {
+                        it.scrollBy(dx, 0)
+                    }
+                }
+            }, { w, h ->
+                currentItemHeight = h
+                viewLayoutManager.verticalOffset = h
+                Log.i("aaaaaaaaaaaa", "config: $w, $h")
             })
         }
 
@@ -120,6 +166,7 @@ class CustomTableView @JvmOverloads constructor(
                 isFocusable = false
                 addItemDecoration(LinearItemDecoration(10, RecyclerView.VERTICAL, false))
                 adapter = rowViewHolder?.let { RowHeaderAdapter(it) }
+                itemAnimator = null
             }
         }
         if (columnHeaderAvailable()) {
@@ -130,6 +177,7 @@ class CustomTableView @JvmOverloads constructor(
                 isFocusable = false
                 addItemDecoration(LinearItemDecoration(10, RecyclerView.HORIZONTAL, false))
                 adapter = columnViewHolder?.let { ColumnHeaderAdapter(it) }
+                itemAnimator = null
             }
         }
 

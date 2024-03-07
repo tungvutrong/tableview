@@ -33,9 +33,4 @@ class CustomHorizontalScrollView @JvmOverloads constructor(
         super.onScrollChanged(l, t, oldl, oldt)
         listener?.onScrollChanged(l, t, oldl, oldt)
     }
-
-    override fun onSizeChanged(w: Int, h: Int, oldw: Int, oldh: Int) {
-        super.onSizeChanged(w, h, oldw, oldh)
-        Log.i("aaaaaaaaaaaaaaa", "onSizeChanged: $w $h. $oldw $oldh")
-    }
 }

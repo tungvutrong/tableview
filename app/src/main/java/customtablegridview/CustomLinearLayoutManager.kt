@@ -2,84 +2,96 @@ package customtablegridview
 
 import android.content.Context
 import android.util.DisplayMetrics
-import android.util.Log
 import android.view.View
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.LinearSmoothScroller
 import androidx.recyclerview.widget.RecyclerView
 
-class CustomLinearLayoutManager(
+open class CustomLinearLayoutManager(
     val context: Context? = null,
     @RecyclerView.Orientation
     orientation: Int = RecyclerView.VERTICAL,
-    reverseLayout: Boolean = false
+    reverseLayout: Boolean = false,
+    private var lastPrevent: Int = 2,
+    private val smoothScrollTime: Float = 25f
 ) : LinearLayoutManager(context, orientation, reverseLayout) {
 
-    private var preventScroll = false
-    private var callbackPreventScroll: ((Int) -> Unit)? = null
+    private var horizontalItemFocusCallback: ((Int) -> Unit)? = null
+    private var verticalItemFocusCallbackUp: ((Int) -> Unit)? = null
+    private var verticalItemFocusCallbackDown: ((Int) -> Unit)? = null
 
-    fun preventChildScrollAndDetectDirection(callback: (Int) -> Unit) {
-        preventScroll = true
-        callbackPreventScroll = callback
+    var verticalOffset = 0
+    private var view: RecyclerView?=null
+    fun horizontalItemFocus(callback: (Int) -> Unit) {
+        horizontalItemFocusCallback = callback
     }
 
-    override fun canScrollHorizontally(): Boolean {
-        return super.canScrollHorizontally() && !preventScroll
+    fun verticalItemFocus(callbackUp: (Int) -> Unit, callbackDown: (Int) -> Unit) {
+        verticalItemFocusCallbackUp = callbackUp
+        verticalItemFocusCallbackDown = callbackDown
     }
 
-    override fun canScrollVertically(): Boolean {
-        return super.canScrollVertically() && !preventScroll
+    override fun onAttachedToWindow(view: RecyclerView?) {
+        super.onAttachedToWindow(view)
+        this.view =  view
     }
 
     override fun onInterceptFocusSearch(focused: View, direction: Int): View? {
-        val position =
-            findItemPosition(focused) ?: return super.onInterceptFocusSearch(focused, direction)
-        if (position < 0) return super.onInterceptFocusSearch(focused, direction)
-
+        val position = findItemPosition(focused)
+        position ?: return null
+        if (position < 0) return null
         when (orientation) {
             RecyclerView.HORIZONTAL -> {
                 if (position == 0 && direction == View.FOCUS_LEFT) {
                     return focused
-                } else if (position == itemCount - 1 && direction == View.FOCUS_RIGHT) {
+                } else if (position == itemCount - lastPrevent - 1 && direction == View.FOCUS_RIGHT) {
                     return focused
                 } else {
                     if (direction == View.FOCUS_LEFT || direction == View.FOCUS_RIGHT) {
-                        Log.i("aaaaaaaaaaaa", "onInterceptFocusSearch: $preventScroll $direction")
-                        if (preventScroll) {
-                            callbackPreventScroll?.invoke(direction)
-                            return super.onInterceptFocusSearch(focused, direction)
+                        val nextPosition = if (direction == View.FOCUS_LEFT) {
+                            position - 1
+                        } else {
+                            position + 1
                         }
-                        val nextPosition =
-                            if (direction == View.FOCUS_LEFT) position - 1 else position + 1
-                        smoothScrollToPosition(nextPosition)
+                        horizontalItemFocusCallback?.invoke(nextPosition)
+                        return if (nextPosition !in findFirstVisibleItemPosition()..findLastVisibleItemPosition()) {
+                            null
+                        } else {
+                            smoothScrollToPosition(nextPosition)
+                            null
+                        }
                     }
                 }
             }
 
             RecyclerView.VERTICAL -> {
-                if (position == 0 && direction == View.FOCUS_UP) {
-                    return focused
-                } else if (position == itemCount - 1 && direction == View.FOCUS_DOWN) {
+                if ((position == 0 && direction == View.FOCUS_UP) || (position == itemCount - lastPrevent - 1 && direction == View.FOCUS_DOWN)) {
                     return focused
                 } else {
-                    if (direction == View.FOCUS_UP || direction == View.FOCUS_DOWN) {
-                        Log.i("aaaaaaaaaaaa", "onInterceptFocusSearch: $preventScroll $direction")
-                        if (preventScroll) {
-                            callbackPreventScroll?.invoke(direction)
-                            return super.onInterceptFocusSearch(focused, direction)
-                        }
-                        val nextPosition =
-                            if (direction == View.FOCUS_UP) position - 1 else position + 1
-                        smoothScrollToPosition(nextPosition)
+                    val nextPosition = if (direction == View.FOCUS_UP) {
+                        position - 1
+                    } else {
+                        position + 1
                     }
+                    if (nextPosition in findFirstVisibleItemPosition()..findLastVisibleItemPosition()) {
+                        return null
+                    }
+                    if (direction == View.FOCUS_DOWN) {
+                        if (nextPosition !in findFirstVisibleItemPosition()..findLastVisibleItemPosition()) {
+                            verticalItemFocusCallbackDown?.invoke(nextPosition)
+                            view?.smoothScrollBy(0, verticalOffset)
+                            return null
+                        }
+                        return null
+                    }
+                    verticalItemFocusCallbackUp?.invoke(nextPosition)
+                    smoothScrollToPosition(nextPosition)
+                    return focused
                 }
+
             }
         }
-        return super.onInterceptFocusSearch(focused, direction)
-    }
-
-    override fun scrollToPosition(position: Int) {
-        smoothScrollToPosition(position)
+        return null
     }
 
     private fun smoothScrollToPosition(position: Int) {
@@ -93,13 +105,12 @@ class CustomLinearLayoutManager(
 
                 override fun calculateSpeedPerPixel(displayMetrics: DisplayMetrics?): Float {
                     return displayMetrics?.densityDpi?.let {
-                        10f / it
+                        smoothScrollTime / it
                     } ?: super.calculateSpeedPerPixel(displayMetrics)
                 }
             }.apply {
                 targetPosition = position
             }
-
             startSmoothScroll(smoothScroller)
         } catch (_: Exception) {
         }

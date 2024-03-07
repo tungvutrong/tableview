@@ -18,7 +18,7 @@ import java.util.UUID
 object ConfigDataTest {
 
     data class ChannelModel(
-        val id: String = UUID.randomUUID().toString(),
+        val id: Int,
         val name: String = "ABCDEFGHIJKLMNOPQRSTUV".random().toString(),
         val url: String = "https://upload.wikimedia.org/wikipedia/commons/thumb/3/3a/Cat03.jpg/1024px-Cat03.jpg",
         val epg: List<EpgModel>,
@@ -52,10 +52,10 @@ object ConfigDataTest {
         }
     }
 
-    private const val channelTest = 35
-    const val epgTest = 20
-    val dataTest = (0 until channelTest).map {a->
-        ChannelModel(epg = (0 until epgTest).map {b->
+    private const val channelTest = 55
+    const val epgTest = 30
+    val dataTest = (0 until channelTest).map { a ->
+        ChannelModel(id = a, epg = (0 until epgTest).map { b ->
             EpgModel(id = "$a", index = b, name = "$a-$b")
         })
     }
@@ -90,17 +90,19 @@ object ConfigDataTest {
 
     fun epgRowHeaderCreator(parent: ViewGroup, type: Int): RowViewHolder {
         val inflater = LayoutInflater.from(parent.context)
-        val view = inflater.inflate(R.layout.item_header_row, parent, false)
+        val view = inflater.inflate(R.layout.item_table_header_row, parent, false)
         return RowViewHolder(view) { data, _ ->
-            val img = view.findViewById<ImageView>(R.id.ctv_data)
+            val img = view.findViewById<ImageView>(R.id.iv_row_header)
+            val tv = view.findViewById<TextView>(R.id.tv_row_header)
             val uri = (data as EpgRowHeaderModel).url
             Glide.with(parent).load(uri).into(img)
+            tv.text = data.id
         }
     }
 
     fun epgColumnHeaderCreator(parent: ViewGroup, type: Int): ColumnHeaderHolder {
         val inflater = LayoutInflater.from(parent.context)
-        val view = inflater.inflate(R.layout.item_header_column, parent, false)
+        val view = inflater.inflate(R.layout.item_table_header_column, parent, false)
         return ColumnHeaderHolder(view) { data, _ ->
             val nameView = view.findViewById<TextView>(R.id.ctv_data)
             val text = (data as EpgColumnHeaderModel).name
@@ -110,7 +112,7 @@ object ConfigDataTest {
 
     fun epgChildCreator(parent: ViewGroup, type: Int): ItemChildHolder {
         val inflater = LayoutInflater.from(parent.context)
-        val child = inflater.inflate(R.layout.item_data_child, parent, false)
+        val child = inflater.inflate(R.layout.item_table_data_cell, parent, false)
         return ItemChildHolder(child) { a, b ->
             val nameView = child.findViewById<TextView>(R.id.ctv_data)
             val text = (a as EpgModel).name
